@@ -33,7 +33,10 @@ endif()
 if(ANDROID)
     STRING(REGEX MATCH "[^ ]+" ANDROID_ABI_PREFIX ${ANDROID_ABI})
     set(THIRD_PREFIX ${ANDROID_ABI_PREFIX}-${ANDROID_NATIVE_API_LEVEL}-)
-    list(INSERT CMAKE_FIND_ROOT_PATH 0 ${CMAKE_SOURCE_DIR}/third_party/${THIRD_PREFIX}protobuf ${CMAKE_SOURCE_DIR}/third_party/${THIRD_PREFIX}OpenBLAS)
+    message(STATUS ${THIRD_PREFIX})
+    list(INSERT CMAKE_FIND_ROOT_PATH 0 ${CMAKE_SOURCE_DIR}/third_party/${THIRD_PREFIX}protobuf ${CMAKE_SOURCE_DIR}/third_party/${THIRD_PREFIX}OpenBLAS 
+    ${CMAKE_SOURCE_DIR}/third_party/boost
+    ${CMAKE_SOURCE_DIR}/third_party/glog-0.3.3 )
 elseif(IOS)
     list(INSERT CMAKE_FIND_ROOT_PATH 0 ${CMAKE_SOURCE_DIR}/third_party/ios-protobuf)
 endif()
@@ -41,8 +44,10 @@ endif()
 
 include(./cmake/ProtoBuf.cmake)
 include(./cmake/Modules/FindOpenBLAS.cmake)
+include(./cmake/Modules/FindBoost.cmake)
 include(./cmake/Modules/FindvecLib.cmake)
 include(./cmake/Modules/FindAtlas.cmake)
+
 # Select blas lib for different platform
 # APPLE only, 1st
 if(VECLIB_FOUND)
@@ -57,6 +62,37 @@ elseif(ATLAS_FOUND)
 else()
     MESSAGE(FATAL_ERROR "BLAS (VecLib/OpenBLAS/Atlas) library not found.")
 endif()
+
+
+
+
+
+message(STATUS "add Boost")
+include_directories("${Boost_INCLUDE_DIR}")
+#list(APPEND Caffe_LINKER_LIBS ${Boost_LIB})
+#list(APPEND Caffe_LINKER_LIBS "/home/mw/caffe-mobile/third_party/boost/lib")
+ 
+
+
+
+#message(STATUS "add glog")
+#include_directories("/home/mw/caffe-mobile/third_party/glog-0.3.3/include")
+#list(APPEND Caffe_LINKER_LIBS "/home/mw/caffe-mobile/third_party/glog-0.3.3/lib/")
+
+
+
+
+#message(STATUS "add HDF5")
+#include_directories("/home/mw/caffe-mobile/third_party/HDF5/include")
+#list(APPEND Caffe_LINKER_LIBS "/home/mw/caffe-mobile/third_party/HDF5/lib/")
+
+
+
+#message(STATUS "add gflags")
+#include_directories("/home/mw/caffe-mobile/third_party/gflags/include")
+#list(APPEND Caffe_LINKER_LIBS "/home/mw/caffe-mobile/third_party/gflags/lib")
+
+
 
 caffe_set_caffe_link()
 
