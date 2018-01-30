@@ -17,12 +17,17 @@
 
 namespace caffe {
 
+
+
 #ifdef USE_BOOST
 // Make sure each thread can have different values.
 static boost::thread_specific_ptr<Caffe> thread_instance_;
 #else
 thread_local static Caffe *thread_instance_ = NULL;
 #endif
+
+
+
 
 Caffe& Caffe::Get() {
 #ifdef USE_BOOST
@@ -37,6 +42,7 @@ Caffe& Caffe::Get() {
   return *thread_instance_;
 #endif
 }
+
 
 // random seeding
 int64_t cluster_seedgen(void) {

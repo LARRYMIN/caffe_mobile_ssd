@@ -23,16 +23,31 @@ CaffeMobile *CaffeMobile::get(const string &param_file,
 CaffeMobile::CaffeMobile(const string &param_file, const string &trained_file) {
   // Load Caffe model
   Caffe::set_mode(Caffe::CPU);
+
+  printf("\n mw caffemobile  \n");
+  printf("\n mw param_file = %s \n", &param_file);
+  printf("\n mw trained_file = %s \n", &trained_file);
+
   CPUTimer timer;
   timer.Start();
+
+  printf("\n mw caffemobile ----------0001  \n");
+
   net_.reset(new Net<float>(param_file, caffe::TEST));
+  
+  printf("\n mw caffemobile ----------001  \n");
   if (net_.get() == NULL) {
+    printf("\n mw caffemobile ----------0 \n");
     throw std::invalid_argument("Invalid arg: param_file=" + param_file);
   }
+  printf("\n mw caffemobile ----------01  \n");
   net_->CopyTrainedLayersFrom(trained_file);
+  printf("\n mw caffemobile ----------02  \n");
   timer.Stop();
   LOG(INFO) << "Load (" << param_file << "," << trained_file << "), time:"
             << timer.MilliSeconds() << " ms.";
+
+  printf("\n mw caffemobile ----------1  \n");
 
   CHECK_EQ(net_->num_inputs(), 1) << "Network should have exactly one input.";
   CHECK_EQ(net_->num_outputs(), 1) << "Network should have exactly one output.";
@@ -44,6 +59,9 @@ CaffeMobile::CaffeMobile(const string &param_file, const string &trained_file) {
       << "Input layer should have 1 or 3 channels.";
   input_width_  = input_layer->width();
   input_height_ = input_layer->height();
+  printf("\n mw caffemobile ----------2  \n");
+
+
 }
 
 CaffeMobile::~CaffeMobile() {

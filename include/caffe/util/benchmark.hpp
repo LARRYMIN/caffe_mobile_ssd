@@ -1,11 +1,7 @@
 #ifndef CAFFE_UTIL_BENCHMARK_H_
 #define CAFFE_UTIL_BENCHMARK_H_
 
-#ifdef USE_BOOST
 #include <boost/date_time/posix_time/posix_time.hpp>
-#else
-#include <sys/time.h>
-#endif
 
 #include "caffe/util/device_alternate.hpp"
 
@@ -35,13 +31,8 @@ class Timer {
   cudaEvent_t start_gpu_;
   cudaEvent_t stop_gpu_;
 #endif
-#ifdef USE_BOOST
   boost::posix_time::ptime start_cpu_;
   boost::posix_time::ptime stop_cpu_;
-#else
-  struct timeval start_cpu_;
-  struct timeval stop_cpu_;
-#endif
   float elapsed_milliseconds_;
   float elapsed_microseconds_;
 };

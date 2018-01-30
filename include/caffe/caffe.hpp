@@ -10,14 +10,10 @@
 #include "caffe/layer.hpp"
 #include "caffe/layer_factory.hpp"
 #include "caffe/net.hpp"
-#ifdef NO_CAFFE_MOBILE
 #include "caffe/parallel.hpp"
-#endif
 #include "caffe/proto/caffe.pb.h"
-#ifdef NO_CAFFE_MOBILE
 #include "caffe/solver.hpp"
 #include "caffe/solver_factory.hpp"
-#endif
 #include "caffe/util/benchmark.hpp"
 #include "caffe/util/io.hpp"
 #include "caffe/util/upgrade_proto.hpp"

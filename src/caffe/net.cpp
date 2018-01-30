@@ -23,6 +23,12 @@
 #include "caffe/util/math_functions.hpp"
 #include "caffe/util/upgrade_proto.hpp"
 
+
+#define ISLOG false
+
+
+using namespace std;
+
 namespace caffe {
 
 template <typename Dtype>
@@ -33,31 +39,41 @@ Net<Dtype>::Net(const NetParameter& param) {
 template <typename Dtype>
 Net<Dtype>::Net(const string& param_file, Phase phase,
     const int level, const vector<string>* stages) {
+
+  if(ISLOG) printf("\n mw ::Net( ----------0001  \n");
   NetParameter param;
 #ifdef USE_PROTOBUF_FULL
   ReadNetParamsFromTextFileOrDie(param_file, &param);
+  if(ISLOG) printf("\n mw ::Net( ----------0002  \n");
 #else
   ReadNetParamsFromBinaryFileOrDie(param_file, &param);
+  if(ISLOG) printf("\n mw ::Net( ----------0003  \n");
 #endif
   // Set phase, stages and level
   param.mutable_state()->set_phase(phase);
+  if(ISLOG) printf("\n mw ::Net( ----------0005  \n");
   if (stages != NULL) {
     for (int i = 0; i < stages->size(); i++) {
       param.mutable_state()->add_stage((*stages)[i]);
     }
   }
+  if(ISLOG) printf("\n mw ::Net( ----------0006  \n");
   param.mutable_state()->set_level(level);
+  if(ISLOG) printf("\n mw ::Net( ----------0007  \n");
   Init(param);
+  if(ISLOG) printf("\n mw ::Net( ----------0008  \n");
 }
 
 template <typename Dtype>
 void Net<Dtype>::Init(const NetParameter& in_param) {
   // Set phase from the state.
   phase_ = in_param.state().phase();
+  if(ISLOG) printf("\n mw ::Init( ----------0009  \n");
   // Filter layers based on their include/exclude rules and
   // the current NetState.
   NetParameter filtered_param;
   FilterNet(in_param, &filtered_param);
+  if(ISLOG) printf("\n mw ::Init( ----------0010\n");
   LOG_IF(INFO, Caffe::root_solver())
       << "Initializing net from parameters: " << std::endl
 #ifdef USE_PROTOBUF_FULL
@@ -70,9 +86,12 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
   InsertSplits(filtered_param, &param);
   // Basically, build all the layers and set up their connections.
   name_ = param.name();
+  if(ISLOG) printf("\n mw ::Init( ----------0011\n");
   map<string, int> blob_name_to_idx;
   set<string> available_blobs;
   memory_used_ = 0;
+
+  if(ISLOG) printf("\n mw ::Init   param.layer_size()  =  %d\n",param.layer_size());
   // For each layer, set up its input and output
   bottom_vecs_.resize(param.layer_size());
   top_vecs_.resize(param.layer_size());
@@ -80,24 +99,66 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
   param_id_vecs_.resize(param.layer_size());
   top_id_vecs_.resize(param.layer_size());
   bottom_need_backward_.resize(param.layer_size());
+  
+  if(ISLOG) printf("\n mw ::Init( ----------0012\n");
+
   for (int layer_id = 0; layer_id < param.layer_size(); ++layer_id) {
+
     // Inherit phase from net if unset.
     if (!param.layer(layer_id).has_phase()) {
       param.mutable_layer(layer_id)->set_phase(phase_);
     }
     // Setup layer.
     const LayerParameter& layer_param = param.layer(layer_id);
+
+
+    if(ISLOG) printf("\nmw layer_id = %d   \n", layer_id);
+    std::cout<<"layer_param.name()="<<layer_param.name()<<endl<<endl;
+
+
     if (layer_param.propagate_down_size() > 0) {
       CHECK_EQ(layer_param.propagate_down_size(),
           layer_param.bottom_size())
           << "propagate_down param must be specified "
           << "either 0 or bottom_size times ";
     }
-    layers_.push_back(LayerRegistry<Dtype>::CreateLayer(layer_param));
+
+
+    if(ISLOG) printf("\n mw ::Init( ----------0013   layers_  = %x\n",  &layers_);
+
+
+
+
+
+
+    if(ISLOG) printf("\n mw ::Init( ----------00131 not equal\n");
+
+
+    shared_ptr<Layer<Dtype> > llll = LayerRegistry<Dtype>::CreateLayer(layer_param);
+
+    if(ISLOG) printf("\n mw ::Init( -------LayerRegistry---00131000\n");
+
+    layers_.push_back(llll);
+
+      
+
+
+
+
+    if(ISLOG) printf("\n mw ::Init( ----------0013111\n");
+
+
     layer_names_.push_back(layer_param.name());
+    if(ISLOG) printf("\n mw ::Init( ----------001322\n");
     LOG_IF(INFO, Caffe::root_solver())
         << "Creating Layer " << layer_param.name();
     bool need_backward = false;
+    if(ISLOG) printf("\n mw ::Init( ----------001333\n");
+
+
+
+    if(ISLOG) printf("\n mw ::Init( ----------0014\n");
+
 
     // Figure out this layer's input and output
     for (int bottom_id = 0; bottom_id < layer_param.bottom_size();
@@ -107,6 +168,10 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       // If a blob needs backward, this layer should provide it.
       need_backward |= blob_need_backward_[blob_id];
     }
+
+    if(ISLOG) printf("\n mw ::Init( ----------0015\n");
+
+
     int num_top = layer_param.top_size();
     for (int top_id = 0; top_id < num_top; ++top_id) {
       AppendTop(param, layer_id, top_id, &available_blobs, &blob_name_to_idx);
@@ -117,9 +182,17 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
         net_input_blobs_.push_back(blobs_[blob_id].get());
       }
     }
+
+    if(ISLOG) printf("\n mw ::Init( ----------0016\n");
+
+
     // If the layer specifies that AutoTopBlobs() -> true and the LayerParameter
     // specified fewer than the required number (as specified by
     // ExactNumTopBlobs() or MinTopBlobs()), allocate them here.
+
+  
+
+
     Layer<Dtype>* layer = layers_[layer_id].get();
     if (layer->AutoTopBlobs()) {
       const int needed_num_top =
@@ -131,6 +204,13 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
         AppendTop(param, layer_id, num_top, NULL, NULL);
       }
     }
+
+    
+
+
+    if(ISLOG) printf("\n mw ::Init( ----------0017\n");
+
+
     // After this layer is connected, set it up.
     layers_[layer_id]->SetUp(bottom_vecs_[layer_id], top_vecs_[layer_id]);
     LOG_IF(INFO, Caffe::root_solver())
@@ -148,9 +228,15 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       }
       memory_used_ += top_vecs_[layer_id][top_id]->count();
     }
+
+
+    if(ISLOG) printf("\n mw ::Init( ----------0018888\n");
+
+
     LOG_IF(INFO, Caffe::root_solver())
         << "Memory required for data: " << memory_used_ * sizeof(Dtype);
     const int param_size = layer_param.param_size();
+    if(ISLOG) printf("\n mw ::Init( ----------0019\n");
     const int num_param_blobs = layers_[layer_id]->blobs().size();
     CHECK_LE(param_size, num_param_blobs)
         << "Too many params specified for layer " << layer_param.name();
@@ -163,9 +249,11 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       layers_[layer_id]->set_param_propagate_down(param_id,
                                                   param_need_backward);
     }
+    if(ISLOG) printf("\n mw ::Init( ----------0020\n");
     for (int param_id = 0; param_id < num_param_blobs; ++param_id) {
       AppendParam(param, layer_id, param_id);
     }
+    if(ISLOG) printf("\n mw ::Init( ----------0021\n");
     // Finally, set the backward flag
     layer_need_backward_.push_back(need_backward);
     if (need_backward) {
@@ -174,6 +262,11 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       }
     }
   }
+  
+
+  if(ISLOG) printf("\n mw ::Init( ------second for ------------------------\n");
+
+
   // Go through the net backwards to determine which blobs contribute to the
   // loss.  We can skip backward computation for blobs that don't contribute
   // to the loss.
@@ -183,6 +276,9 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
   set<string> blobs_under_loss;
   set<string> blobs_skip_backp;
   for (int layer_id = layers_.size() - 1; layer_id >= 0; --layer_id) {
+
+    if(ISLOG) printf("\n mw  second for      layer_id = %d\n", layer_id );
+
     bool layer_contributes_loss = false;
     bool layer_skip_propagate_down = true;
     for (int top_id = 0; top_id < top_vecs_[layer_id].size(); ++top_id) {
@@ -231,6 +327,12 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       }
     }
   }
+
+
+  if(ISLOG) printf("\n mw ::Init( ----------0014111\n");
+
+
+
   // Handle force_backward if needed.
   if (param.force_backward()) {
     for (int layer_id = 0; layer_id < layers_.size(); ++layer_id) {
@@ -250,6 +352,11 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       }
     }
   }
+
+
+  if(ISLOG) printf("\n mw ::Init( ----------001422222\n");
+
+
   // In the end, all remaining blobs are considered output blobs.
   for (set<string>::iterator it = available_blobs.begin();
       it != available_blobs.end(); ++it) {
@@ -267,6 +374,10 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
   ShareWeights();
   debug_info_ = param.debug_info();
   LOG_IF(INFO, Caffe::root_solver()) << "Network initialization done.";
+
+  if(ISLOG) printf("\n mw ::Init( ----------0015\n");
+
+
 }
 
 template <typename Dtype>
